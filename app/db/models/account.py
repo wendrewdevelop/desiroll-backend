@@ -39,31 +39,23 @@ class AccountModel(Base):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = db.Column(db.String(255), nullable=False, unique=True)
     password = db.Column(db.String(255), nullable=False)
-    store_id = db.Column(
-        UUID(as_uuid=True),
-        db.ForeignKey('tb_store.id'),
-        nullable=False
-    )
     profile_picture = db.Column(db.LargeBinary)
     created_at = db.Column(db.Date, default=func.now())
     updated_at = db.Column(db.Date, default=func.now(), onupdate=func.now())
-
-    store = relationship("StoreModel", back_populates="account")
 
     @staticmethod
     async def add(
         account: AccountInput,
         file: Optional[UploadFile] = File(None)
     ):
-        from core.security import hash_password
+        from app.core.security import hash_password
 
         print(f'ACCOUNT OBJ::: {account}')
 
         password = hash_password(account.password)
         query = AccountModel(
             email=account.email,
-            password=password.decode('utf8'),
-            store_id=account.store_id
+            password=password.hex()
         )
 
         try:
@@ -73,11 +65,12 @@ class AccountModel(Base):
 
             # Caso a imagem seja fornecida, chamar o método `upload_image`
             if file:
+                file_content = await file.read()
                 await upload_image(
-                    item_id=str(query.id),  # Use o `id` do item recém-criado
+                    item_id=str(query.id),
                     model_instance=AccountModel,
-                    column="profile_picture",  # Nome da coluna que deseja atualizar
-                    file=file
+                    column="profile_picture",
+                    file_content=file_content
                 )
 
             return query
@@ -93,8 +86,7 @@ class AccountModel(Base):
     def get(account_id):
         query = session.query(
             AccountModel.id.label("id"),
-            AccountModel.email.label("store_name"),
-            AccountModel.store_id.label("store_id")
+            AccountModel.email.label("store_name")
         )
         if account_id:
             query = query.filter(AccountModel.id==account_id)
@@ -108,7 +100,7 @@ class AccountModel(Base):
         finally:
             session.close()
 
-    def update(store_id: str, update_data: dict):
+    def update(update_data: dict):
         """Update data using dict
 
         Usage:
@@ -170,7 +162,6 @@ class AccountModel(Base):
         query = session.query(
             AccountModel.id.label("id"),
             AccountModel.email.label("email"),
-            AccountModel.store_id.label("store_id"),
         ).filter(AccountModel.email==email)
         query = query.all()
         try:
@@ -187,8 +178,7 @@ class AccountModel(Base):
     def dict_columns(query) -> dict:
         return [{
             "id": data[0],
-            "email": data[1],
-            "store_id": data[2]
+            "email": data[1]
         } for data in query]
     
     @staticmethod
@@ -203,7 +193,7 @@ class AccountModel(Base):
         return user
     
     @staticmethod
-    async def get_current_user(token: str = Depends(oauth2_scheme)):
+    async def get_current_user(token: str):
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",

@@ -16,6 +16,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from passlib.context import CryptContext
 from typing_extensions import Annotated
 from decouple import config
+from bcrypt import hashpw, gensalt
 from app.schemas import Token, TokenData
 
 
@@ -40,14 +41,8 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def hash_password(password: str):
-    # converting password to array of bytes
-    bytes = password.encode('utf-8')
-    # generating the salt
-    salt = bcrypt.gensalt()
-    # Hashing the password
-    hash = bcrypt.hashpw(bytes, salt)
-    return hash
+def hash_password(password: str) -> bytes:
+    return hashpw(password.encode(), gensalt())
 
 
 def check_password(password: str, hash: str):

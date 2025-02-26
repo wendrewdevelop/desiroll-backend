@@ -10,7 +10,6 @@ class AuthAccountToken(BaseModel):
 class AccountInput(BaseModel):
     email: str
     password: str
-    store_id: UUID
 
     class Config:
         orm_mode = True
@@ -21,7 +20,6 @@ class AccountInput(BaseModel):
 class AccountOutput(BaseModel):
     email: str
     password: str
-    store_id: UUID
 
     class config:
         orm_mode = True
