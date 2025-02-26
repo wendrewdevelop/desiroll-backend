@@ -1,38 +1,53 @@
-from fastapi import FastAPI
+import os
+import uvicorn
+from fastapi.staticfiles import StaticFiles
+from decouple import config
 from fastapi.middleware.cors import CORSMiddleware
-import socketio
+from starlette.middleware.sessions import SessionMiddleware
+from fastapi_sqlalchemy import DBSessionMiddleware
+from app.api.v1.endpoints import router as api_routes
+from app.core.security import app
+from app.core.config import Base
+from app.db.session import postgresql, session
 
+URL_local = "http://localhost:8000" if config("ENV") == "DEV" \
+            else "https://luizahub.market.com.br"
+origins = ["*"]
 
-# Cria a instância do Socket.IO
-sio = socketio.AsyncServer(
-    async_mode='asgi',
-    cors_allowed_origins=[]
-)
+Base.metadata.create_all(bind=postgresql.get_engine())
 
-# Cria a instância do FastAPI
-app = FastAPI()
-
-# Monta o Socket.IO no caminho "/ws"
-app.mount("/ws", socketio.ASGIApp(sio))
-
-# Configuração de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(
+    DBSessionMiddleware,
+    db_url=config("DB_URL")
+)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=config("SECRET_KEY"),
+    same_site="Lax"
+)
 
-# Rotas HTTP de exemplo
-@app.get("/health")
-async def health_check():
-    return {"status": "ok"}
+# assets_directory = os.path.join(os.path.dirname(__file__), "src/frontend/assets")
+# assets_directory = os.path.abspath(assets_directory)
+app.mount(
+    "/assets", 
+    StaticFiles(directory="src/frontend/assets"), 
+    name="assets"
+)
 
-# Importa eventos para registrar os handlers no sio
-# (certifique-se de que "events.py" importe "sio" de maneira correta)
-from app.sockets import events
+app.include_router(api_routes, prefix="/api")
 
-# Se preferir rodar diretamente via "python app/main.py":
-# if __name__ == "__main__":
-#     import uvicorn
-#     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+if __name__ == "__main__":
+    uvicorn.run(
+        "app.main:app",
+        host="localhost",
+        port=8000,
+        log_level="info",
+        reload=True
+    )
