@@ -6,22 +6,17 @@ import secrets
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
-from fastapi import FastAPI
 from datetime import datetime, timedelta, timezone
 from typing import Union, List
 from fastapi import Depends, FastAPI, HTTPException, status, WebSocket
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError, ExpiredSignatureError
-from sqlalchemy.ext.declarative import declarative_base
 from passlib.context import CryptContext
 from typing_extensions import Annotated
 from decouple import config
 from bcrypt import hashpw, gensalt
-from app.schemas import Token, TokenData
 
 
-app = FastAPI()
-Base = declarative_base()
 pwd_context = CryptContext(
     schemes=["bcrypt"], 
     deprecated="auto"
@@ -70,8 +65,5 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 
 async def get_token(token: str = Depends(oauth2_scheme)):
     return token
-
-
-
 
 

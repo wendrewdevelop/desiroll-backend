@@ -23,11 +23,11 @@ from jose import (
 )
 from decouple import config
 from app.db.session import session, upload_image
-from app.core.security import (
-    Base, 
+from app.core import ( 
     verify_password, 
     blacklisted_tokens,
-    oauth2_scheme
+    oauth2_scheme,
+    Base
 )
 from app.schemas import AccountInput, TokenData
 

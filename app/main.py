@@ -1,13 +1,13 @@
 import os
 import uvicorn
-from fastapi.staticfiles import StaticFiles
 from decouple import config
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi_sqlalchemy import DBSessionMiddleware
 from app.api.v1.endpoints import router as api_routes
-from app.core.security import app, Base
+from app.core.config import app, Base
 from app.db.session import postgresql, session
+
 
 URL_local = "http://localhost:8000" if config("ENV") == "DEV" \
             else "https://desiroll.com.br"

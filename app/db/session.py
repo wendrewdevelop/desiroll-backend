@@ -96,7 +96,6 @@ async def upload_image(
         return JSONResponse(content={"message": "Image uploaded successfully"})
 
 
-# Base = declarative_base()
 postgresql = PostgreSql(
     user=config("NAME"),
     password=config("PASSWORD"),
